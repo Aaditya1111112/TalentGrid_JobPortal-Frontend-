@@ -3,12 +3,14 @@
 A role-based job portal frontend built with React.
 
 ## Tech Stack
+
 - React 18 (Functional Components, Hooks)
 - React Router DOM
 - Axios
 - Pure CSS (no UI frameworks)
 
 ## Features
+
 - Browse and search job listings (keyword, location, experience)
 - Role-based UI (Seeker and Employer views)
 - JWT authentication with persistent login
@@ -16,6 +18,28 @@ A role-based job portal frontend built with React.
 - Employer dashboard — job posting, applicant tracking, status updates, resume download
 - Job detail page with apply functionality
 - Dark themed UI
+
+## Project Structure
+```
+src/
+├── api/
+│   └── axios.js
+├── components/
+│   ├── Navbar.js
+│   ├── JobCard.js
+│   └── ProtectedRoute.js
+├── context/
+│   └── AuthContext.js
+├── pages/
+│   ├── HomePage.js
+│   ├── AuthPage.js
+│   ├── JobDetailPage.js
+│   ├── SeekerDashboard.js
+│   └── EmployerDashboard.js
+├── App.js
+├── App.css
+└── index.js
+```
 
 ## Setup
 
@@ -32,6 +56,7 @@ npm start
 5. Open `http://localhost:3000`
 
 ## Pages
+
 | Route | Access |
 |-------|--------|
 | / | Public — job listings with search |
@@ -41,5 +66,6 @@ npm start
 | /employer/dashboard | EMPLOYER only |
 
 ## Backend
+
 This frontend connects to the TalentGrid backend API.
 Backend repo: https://github.com/Aaditya1111112/talentgrid-backend
