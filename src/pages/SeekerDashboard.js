@@ -15,89 +15,172 @@ function SeekerDashboard() {
 
   function handleChange(e) { setForm({ ...form, [e.target.name]: e.target.value }); }
   function handleSkillsChange(e) { setForm({ ...form, skills: e.target.value.split(',').map(s => s.trim()) }); }
+  function flash(m) { setMsg(m); setTimeout(() => setMsg(''), 3000); }
 
   async function handleSave(e) {
     e.preventDefault();
-    try { await api.put('/seekers/me', form); setMsg('Profile updated successfully'); setTimeout(() => setMsg(''), 3000); }
-    catch { setMsg('Update failed'); }
+    try { await api.put('/seekers/me', form); flash('Saved.'); }
+    catch { flash('Failed to save.'); }
   }
 
   async function handleResumeUpload(e) {
     const file = e.target.files[0];
     if (!file) return;
-    const formData = new FormData();
-    formData.append('file', file);
+    const fd = new FormData(); fd.append('file', file);
     try {
-      await api.post('/seekers/me/resume', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
-      setMsg('Resume uploaded');
-      setTimeout(() => setMsg(''), 3000);
-    } catch { setMsg('Upload failed'); }
+      await api.post('/seekers/me/resume', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+      flash('Resume uploaded.');
+    } catch { flash('Upload failed.'); }
   }
 
   async function handleWithdraw(id) {
     if (!window.confirm('Withdraw this application?')) return;
     try { await api.delete(`/applications/${id}`); setApplications(applications.filter(a => a.id !== id)); }
-    catch { setMsg('Withdraw failed'); }
+    catch { flash('Failed to withdraw.'); }
   }
 
-  const statusColor = { APPLIED: '#3b82f6', REVIEWED: '#f59e0b', SHORTLISTED: '#10b981', REJECTED: '#ef4444', HIRED: '#8b5cf6' };
+  const statusMeta = {
+    APPLIED:     { label: 'Applied',     color: 'var(--blue)',  bg: 'var(--blue-bg)' },
+    REVIEWED:    { label: 'Reviewed',    color: 'var(--amber)', bg: 'var(--amber-bg)' },
+    SHORTLISTED: { label: 'Shortlisted', color: 'var(--green)', bg: 'var(--green-bg)' },
+    REJECTED:    { label: 'Rejected',    color: 'var(--red)',   bg: 'var(--red-bg)' },
+    HIRED:       { label: 'Hired 🎉',    color: 'var(--green)', bg: 'var(--green-bg)' },
+  };
+
+  const navItems = [
+    { key: 'profile', label: 'Profile' },
+    { key: 'applications', label: `Applications`, count: applications.length },
+  ];
 
   return (
     <div style={s.page}>
       <div style={s.sidebar}>
-        <div style={s.avatar}>{profile?.firstName?.[0] || '?'}</div>
-        <p style={s.name}>{profile?.firstName} {profile?.lastName}</p>
-        <p style={s.email}>{profile?.email}</p>
-        <button style={tab === 'profile' ? s.navActive : s.nav} onClick={() => setTab('profile')}>My Profile</button>
-        <button style={tab === 'applications' ? s.navActive : s.nav} onClick={() => setTab('applications')}>Applications ({applications.length})</button>
+        <div style={s.sideTop}>
+          <div style={s.avatar}>{profile?.firstName?.[0] || '?'}</div>
+          <div>
+            <div style={s.userName}>{profile?.firstName} {profile?.lastName}</div>
+            <div style={s.userEmail}>{profile?.email}</div>
+          </div>
+        </div>
+        <nav style={s.nav}>
+          {navItems.map(item => (
+            <button key={item.key} style={tab === item.key ? s.navItemActive : s.navItem} onClick={() => setTab(item.key)}>
+              <span>{item.label}</span>
+              {item.count !== undefined && <span style={s.navCount}>{item.count}</span>}
+            </button>
+          ))}
+        </nav>
       </div>
+
       <div style={s.main}>
-        {msg && <div style={s.msg}>{msg}</div>}
+        {msg && <div style={s.toast}>{msg}</div>}
+
         {tab === 'profile' && (
-          <div style={s.card}>
-            <h2 style={s.heading}>Edit Profile</h2>
-            <form onSubmit={handleSave} style={s.form}>
-              <div style={s.row}>
-                <input style={s.input} name="firstName" placeholder="First Name" value={form.firstName || ''} onChange={handleChange} />
-                <input style={s.input} name="lastName" placeholder="Last Name" value={form.lastName || ''} onChange={handleChange} />
-              </div>
-              <input style={s.input} name="skills" placeholder="Skills (comma separated)" value={form.skills?.join(', ') || ''} onChange={handleSkillsChange} />
-              <input style={s.input} name="education" placeholder="Education" value={form.education || ''} onChange={handleChange} />
-              <div style={s.row}>
-                <input style={s.input} name="experienceYears" type="number" placeholder="Experience (years)" value={form.experienceYears || ''} onChange={handleChange} />
-                <input style={s.input} name="noticePeriodDays" type="number" placeholder="Notice Period (days)" value={form.noticePeriodDays || ''} onChange={handleChange} />
-              </div>
-              <div style={s.row}>
-                <input style={s.input} name="currentCtc" type="number" placeholder="Current CTC" value={form.currentCtc || ''} onChange={handleChange} />
-                <input style={s.input} name="locationState" placeholder="Location State" value={form.locationState || ''} onChange={handleChange} />
-              </div>
-              <button style={s.btn} type="submit">Save Profile</button>
-            </form>
-            <div style={{ marginTop: '24px', borderTop: '1px solid #2d2d44', paddingTop: '20px' }}>
-              <p style={s.label}>Resume {profile?.resumeUrl ? '✅ Uploaded' : '❌ Not uploaded'}</p>
-              <input type="file" accept=".pdf" onChange={handleResumeUpload} style={{ color: '#94a3b8' }} />
+          <>
+            <div style={s.pageHeader}>
+              <h1 style={s.pageTitle}>Profile</h1>
+              <p style={s.pageSub}>Keep your profile up to date for better matches.</p>
             </div>
-          </div>
-        )}
-        {tab === 'applications' && (
-          <div style={s.card}>
-            <h2 style={s.heading}>My Applications</h2>
-            {applications.length === 0 && <p style={s.empty}>No applications yet.</p>}
-            {applications.map(app => (
-              <div key={app.id} style={s.appRow}>
-                <div>
-                  <p style={s.jobTitle}>{app.jobTitle}</p>
-                  <p style={s.company}>{app.companyName}</p>
+            <form onSubmit={handleSave} style={s.formGrid}>
+              <div style={s.formSection}>
+                <div style={s.sectionLabel}>Personal</div>
+                <div style={s.row}>
+                  <div style={s.field}>
+                    <label style={s.label}>First name</label>
+                    <input style={s.input} name="firstName" value={form.firstName || ''} onChange={handleChange} />
+                  </div>
+                  <div style={s.field}>
+                    <label style={s.label}>Last name</label>
+                    <input style={s.input} name="lastName" value={form.lastName || ''} onChange={handleChange} />
+                  </div>
                 </div>
-                <div style={s.appRight}>
-                  <span style={{ ...s.badge, background: statusColor[app.status] || '#94a3b8' }}>{app.status}</span>
-                  {app.status === 'APPLIED' && (
-                    <button style={s.withdrawBtn} onClick={() => handleWithdraw(app.id)}>Withdraw</button>
-                  )}
+                <div style={s.field}>
+                  <label style={s.label}>Education</label>
+                  <input style={s.input} name="education" placeholder="B.Tech Computer Science" value={form.education || ''} onChange={handleChange} />
+                </div>
+                <div style={s.field}>
+                  <label style={s.label}>Location</label>
+                  <input style={s.input} name="locationState" placeholder="Delhi" value={form.locationState || ''} onChange={handleChange} />
                 </div>
               </div>
-            ))}
-          </div>
+
+              <div style={s.formSection}>
+                <div style={s.sectionLabel}>Career</div>
+                <div style={s.field}>
+                  <label style={s.label}>Skills <span style={s.hint}>(comma separated)</span></label>
+                  <input style={s.input} name="skills" placeholder="Java, React, PostgreSQL" value={form.skills?.join(', ') || ''} onChange={handleSkillsChange} />
+                </div>
+                <div style={s.row}>
+                  <div style={s.field}>
+                    <label style={s.label}>Experience (yrs)</label>
+                    <input style={s.input} name="experienceYears" type="number" value={form.experienceYears || ''} onChange={handleChange} />
+                  </div>
+                  <div style={s.field}>
+                    <label style={s.label}>Notice period (days)</label>
+                    <input style={s.input} name="noticePeriodDays" type="number" value={form.noticePeriodDays || ''} onChange={handleChange} />
+                  </div>
+                </div>
+                <div style={s.field}>
+                  <label style={s.label}>Current CTC (₹)</label>
+                  <input style={s.input} name="currentCtc" type="number" placeholder="800000" value={form.currentCtc || ''} onChange={handleChange} />
+                </div>
+              </div>
+
+              <div style={s.formSection}>
+                <div style={s.sectionLabel}>Resume</div>
+                <div style={s.resumeBox}>
+                  <div style={s.resumeStatus}>
+                    {profile?.resumeUrl
+                      ? <><span style={s.resumeDot} />Resume uploaded</>
+                      : <><span style={{ ...s.resumeDot, background: 'var(--red)' }} />No resume</>
+                    }
+                  </div>
+                  <label style={s.uploadBtn}>
+                    {profile?.resumeUrl ? 'Replace PDF' : 'Upload PDF'}
+                    <input type="file" accept=".pdf" onChange={handleResumeUpload} style={{ display: 'none' }} />
+                  </label>
+                </div>
+              </div>
+
+              <button style={s.saveBtn} type="submit">Save changes</button>
+            </form>
+          </>
+        )}
+
+        {tab === 'applications' && (
+          <>
+            <div style={s.pageHeader}>
+              <h1 style={s.pageTitle}>Applications</h1>
+              <p style={s.pageSub}>{applications.length} total · track your progress here.</p>
+            </div>
+            {applications.length === 0 ? (
+              <div style={s.empty}>
+                <p style={s.emptyTitle}>No applications yet</p>
+                <p style={s.emptySub}>Browse jobs and apply to get started.</p>
+              </div>
+            ) : (
+              <div style={s.appList}>
+                {applications.map(app => {
+                  const meta = statusMeta[app.status] || { label: app.status, color: 'var(--text-secondary)', bg: 'var(--highlight)' };
+                  return (
+                    <div key={app.id} style={s.appRow}>
+                      <div style={s.appLeft}>
+                        <div style={s.appTitle}>{app.jobTitle}</div>
+                        <div style={s.appCompany}>{app.companyName}</div>
+                        <div style={s.appDate}>{new Date(app.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</div>
+                      </div>
+                      <div style={s.appRight}>
+                        <span style={{ ...s.statusBadge, color: meta.color, background: meta.bg }}>{meta.label}</span>
+                        {app.status === 'APPLIED' && (
+                          <button style={s.withdrawBtn} onClick={() => handleWithdraw(app.id)}>Withdraw</button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
@@ -105,29 +188,46 @@ function SeekerDashboard() {
 }
 
 const s = {
-  page: { display: 'flex', minHeight: 'calc(100vh - 60px)', background: '#0f0f13' },
-  sidebar: { width: '240px', background: '#13131f', borderRight: '1px solid #2d2d44', padding: '32px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' },
-  avatar: { width: '64px', height: '64px', borderRadius: '50%', background: '#7c3aed', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px', fontWeight: '700' },
-  name: { fontWeight: '600', fontSize: '16px', margin: 0, textAlign: 'center', color: '#e2e8f0' },
-  email: { fontSize: '12px', color: '#7c85a2', margin: 0, textAlign: 'center' },
-  nav: { width: '100%', padding: '10px 14px', background: 'none', border: 'none', borderRadius: '8px', textAlign: 'left', cursor: 'pointer', fontSize: '14px', color: '#94a3b8' },
-  navActive: { width: '100%', padding: '10px 14px', background: '#2d1f4e', border: 'none', borderRadius: '8px', textAlign: 'left', cursor: 'pointer', fontSize: '14px', color: '#a855f7', fontWeight: '600' },
-  main: { flex: 1, padding: '32px' },
-  card: { background: '#1e1e2e', borderRadius: '12px', padding: '28px', border: '1px solid #2d2d44' },
-  heading: { fontSize: '18px', fontWeight: '700', marginBottom: '20px', color: '#e2e8f0' },
-  form: { display: 'flex', flexDirection: 'column', gap: '14px' },
-  row: { display: 'flex', gap: '14px' },
-  input: { flex: 1, padding: '11px 14px', border: '1px solid #2d2d44', borderRadius: '8px', fontSize: '14px', outline: 'none', width: '100%', background: '#13131f', color: '#e2e8f0' },
-  btn: { padding: '12px 28px', background: '#7c3aed', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', alignSelf: 'flex-start' },
-  label: { fontSize: '14px', color: '#94a3b8', marginBottom: '8px' },
-  msg: { background: '#052e16', color: '#4ade80', padding: '12px 16px', borderRadius: '8px', marginBottom: '16px', fontSize: '14px' },
-  appRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 0', borderBottom: '1px solid #2d2d44' },
-  appRight: { display: 'flex', alignItems: 'center', gap: '12px' },
-  jobTitle: { fontWeight: '600', fontSize: '15px', margin: 0, color: '#e2e8f0' },
-  company: { fontSize: '13px', color: '#7c85a2', margin: '4px 0 0' },
-  badge: { padding: '4px 12px', borderRadius: '20px', color: '#fff', fontSize: '12px', fontWeight: '600' },
-  withdrawBtn: { padding: '6px 14px', background: '#2d0a0a', color: '#f87171', border: '1px solid #7f1d1d', borderRadius: '6px', fontSize: '12px', cursor: 'pointer' },
-  empty: { color: '#7c85a2', textAlign: 'center', marginTop: '40px' },
+  page: { display: 'flex', minHeight: 'calc(100vh - 56px)', background: 'var(--bg)' },
+  sidebar: { width: '240px', flexShrink: 0, borderRight: '1px solid var(--border)', background: 'var(--surface)', padding: '24px 16px', display: 'flex', flexDirection: 'column', gap: '24px' },
+  sideTop: { display: 'flex', alignItems: 'center', gap: '12px', padding: '8px' },
+  avatar: { width: '36px', height: '36px', borderRadius: '50%', background: 'var(--accent)', color: 'var(--accent-fg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: '600', flexShrink: 0 },
+  userName: { fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)' },
+  userEmail: { fontSize: '12px', color: 'var(--text-tertiary)' },
+  nav: { display: 'flex', flexDirection: 'column', gap: '2px' },
+  navItem: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: 'none', border: 'none', borderRadius: 'var(--radius-sm)', fontSize: '14px', color: 'var(--text-secondary)', cursor: 'pointer', textAlign: 'left' },
+  navItemActive: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: 'var(--highlight)', border: 'none', borderRadius: 'var(--radius-sm)', fontSize: '14px', color: 'var(--text-primary)', fontWeight: '500', cursor: 'pointer', textAlign: 'left' },
+  navCount: { fontSize: '12px', color: 'var(--text-tertiary)', fontFamily: 'var(--mono)' },
+  main: { flex: 1, padding: '40px 48px', display: 'flex', flexDirection: 'column', gap: '32px', maxWidth: '720px' },
+  toast: { padding: '10px 14px', background: 'var(--green-bg)', color: 'var(--green)', borderRadius: 'var(--radius-sm)', fontSize: '13px', border: '1px solid #b3dfc6' },
+  pageHeader: { display: 'flex', flexDirection: 'column', gap: '4px' },
+  pageTitle: { fontSize: '24px', fontWeight: '500', color: 'var(--text-primary)', letterSpacing: '-0.5px' },
+  pageSub: { fontSize: '14px', color: 'var(--text-secondary)' },
+  formGrid: { display: 'flex', flexDirection: 'column', gap: '32px' },
+  formSection: { display: 'flex', flexDirection: 'column', gap: '14px' },
+  sectionLabel: { fontSize: '11px', fontWeight: '500', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '1px', fontFamily: 'var(--mono)', paddingBottom: '8px', borderBottom: '1px solid var(--border)' },
+  row: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' },
+  field: { display: 'flex', flexDirection: 'column', gap: '6px' },
+  label: { fontSize: '12px', fontWeight: '500', color: 'var(--text-secondary)' },
+  hint: { fontWeight: '400', color: 'var(--text-tertiary)' },
+  input: { padding: '9px 12px', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', fontSize: '14px', background: 'var(--surface)', color: 'var(--text-primary)', outline: 'none' },
+  resumeBox: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', background: 'var(--highlight)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' },
+  resumeStatus: { display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: 'var(--text-primary)' },
+  resumeDot: { width: '8px', height: '8px', borderRadius: '50%', background: 'var(--green)', display: 'inline-block' },
+  uploadBtn: { fontSize: '13px', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '6px 12px', cursor: 'pointer', background: 'var(--surface)' },
+  saveBtn: { alignSelf: 'flex-start', padding: '10px 20px', background: 'var(--accent)', color: 'var(--accent-fg)', border: 'none', borderRadius: 'var(--radius-sm)', fontSize: '14px', fontWeight: '500', cursor: 'pointer' },
+  appList: { display: 'flex', flexDirection: 'column' },
+  appRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 0', borderBottom: '1px solid var(--border)' },
+  appLeft: { display: 'flex', flexDirection: 'column', gap: '3px' },
+  appTitle: { fontSize: '15px', fontWeight: '500', color: 'var(--text-primary)' },
+  appCompany: { fontSize: '13px', color: 'var(--text-secondary)' },
+  appDate: { fontSize: '12px', color: 'var(--text-tertiary)', fontFamily: 'var(--mono)' },
+  appRight: { display: 'flex', alignItems: 'center', gap: '10px' },
+  statusBadge: { fontSize: '12px', fontWeight: '500', padding: '4px 10px', borderRadius: '100px' },
+  withdrawBtn: { fontSize: '12px', color: 'var(--red)', background: 'var(--red-bg)', border: '1px solid #f5c6c6', borderRadius: 'var(--radius-sm)', padding: '5px 10px', cursor: 'pointer' },
+  empty: { textAlign: 'center', padding: '60px 0' },
+  emptyTitle: { fontSize: '16px', fontWeight: '500', color: 'var(--text-primary)', marginBottom: '6px' },
+  emptySub: { fontSize: '14px', color: 'var(--text-tertiary)' },
 };
 
 export default SeekerDashboard;

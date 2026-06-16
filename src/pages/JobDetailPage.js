@@ -22,68 +22,86 @@ function JobDetailPage() {
     setLoading(true);
     try {
       await api.post(`/applications/job/${id}/apply`);
-      setApplied(true);
-      setMsg('Successfully applied!');
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to apply');
-    } finally { setLoading(false); }
+      setApplied(true); setMsg('Application submitted.');
+    } catch (err) { setError(err.response?.data?.message || 'Failed to apply'); }
+    finally { setLoading(false); }
   }
 
+  if (!job && !error) return <div style={s.loading}>Loading...</div>;
+
   if (error) return (
-    <div style={s.center}>
-      <p style={{ color: '#f87171' }}>{error}</p>
-      <button style={s.backBtn} onClick={() => navigate('/')}>← Back to Jobs</button>
+    <div style={s.loading}>
+      <p style={{ color: 'var(--red)', marginBottom: '16px' }}>{error}</p>
+      <button style={s.backBtn} onClick={() => navigate('/')}>← Back</button>
     </div>
   );
 
-  if (!job) return <div style={s.center}>Loading...</div>;
-
   return (
     <div style={s.page}>
-      <div style={s.container}>
-        <button style={s.backBtn} onClick={() => navigate('/')}>← Back to Jobs</button>
-        <div style={s.card}>
-          <div style={s.header}>
-            <div>
-              <h1 style={s.title}>{job.title}</h1>
-              <p style={s.company}>{job.companyName}</p>
-              <p style={s.industry}>{job.industry}</p>
+      <div style={s.sidebar}>
+        <button style={s.backBtn} onClick={() => navigate('/')}>← Back to jobs</button>
+        <div style={s.sideCard}>
+          <div style={s.companyAvatar}>{job.companyName?.[0]}</div>
+          <div style={s.companyName}>{job.companyName}</div>
+          {job.industry && <div style={s.companyIndustry}>{job.industry}</div>}
+          <div style={s.divider} />
+          <div style={s.statList}>
+            <div style={s.stat}>
+              <span style={s.statLabel}>Location</span>
+              <span style={s.statVal}>{job.locationState || 'Remote'}</span>
             </div>
-            <div style={s.headerRight}>
-              <span style={s.statusBadge}>{job.status}</span>
-              {auth?.role === 'SEEKER' && (
-                <button style={applied ? s.appliedBtn : s.applyBtn} onClick={handleApply} disabled={applied || loading}>
-                  {applied ? '✓ Applied' : loading ? 'Applying...' : 'Apply Now'}
-                </button>
-              )}
-              {!auth && <button style={s.applyBtn} onClick={() => navigate('/auth')}>Login to Apply</button>}
+            <div style={s.stat}>
+              <span style={s.statLabel}>Experience</span>
+              <span style={s.statVal}>{job.experienceRequiredYears}+ years</span>
+            </div>
+            {job.salaryMin && (
+              <div style={s.stat}>
+                <span style={s.statLabel}>Salary</span>
+                <span style={s.statVal}>₹{(job.salaryMin / 100000).toFixed(1)}L – ₹{(job.salaryMax / 100000).toFixed(1)}L</span>
+              </div>
+            )}
+            <div style={s.stat}>
+              <span style={s.statLabel}>Posted</span>
+              <span style={s.statVal}>{new Date(job.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+            </div>
+            <div style={s.stat}>
+              <span style={s.statLabel}>Status</span>
+              <span style={{ ...s.statVal, color: 'var(--green)', fontWeight: '500' }}>{job.status}</span>
             </div>
           </div>
           {msg && <div style={s.success}>{msg}</div>}
-          {error && <div style={s.errorBox}>{error}</div>}
-          <div style={s.metaRow}>
-            <div style={s.metaItem}><span style={s.metaLabel}>📍 Location</span><span style={s.metaValue}>{job.locationState || 'Not specified'}</span></div>
-            <div style={s.metaItem}><span style={s.metaLabel}>🧑‍💼 Experience</span><span style={s.metaValue}>{job.experienceRequiredYears}+ years</span></div>
-            {job.salaryMin && <div style={s.metaItem}><span style={s.metaLabel}>💰 Salary</span><span style={s.metaValue}>₹{(job.salaryMin / 100000).toFixed(1)}L – ₹{(job.salaryMax / 100000).toFixed(1)}L</span></div>}
-            <div style={s.metaItem}><span style={s.metaLabel}>📅 Posted</span><span style={s.metaValue}>{new Date(job.createdAt).toLocaleDateString()}</span></div>
-          </div>
-          {job.requiredSkills?.length > 0 && (
-            <div style={s.section}>
-              <h3 style={s.sectionTitle}>Required Skills</h3>
-              <div style={s.skills}>{job.requiredSkills.map((skill, i) => <span key={i} style={s.skill}>{skill}</span>)}</div>
-            </div>
-          )}
-          <div style={s.section}>
-            <h3 style={s.sectionTitle}>Job Description</h3>
-            <p style={s.description}>{job.description}</p>
-          </div>
+          {error && !job && <div style={s.errorBox}>{error}</div>}
           {auth?.role === 'SEEKER' && (
-            <div style={s.applyBottom}>
-              <button style={applied ? s.appliedBtn : s.applyBtn} onClick={handleApply} disabled={applied || loading}>
-                {applied ? '✓ Applied' : loading ? 'Applying...' : 'Apply Now'}
-              </button>
-            </div>
+            <button style={applied ? s.appliedBtn : s.applyBtn} onClick={handleApply} disabled={applied || loading}>
+              {applied ? '✓ Applied' : loading ? 'Submitting...' : 'Apply for this role'}
+            </button>
           )}
+          {!auth && (
+            <button style={s.applyBtn} onClick={() => navigate('/auth')}>Sign in to apply</button>
+          )}
+        </div>
+      </div>
+
+      <div style={s.main}>
+        <div style={s.titleBlock}>
+          <span style={s.eyebrow}>{job.industry || 'Open role'}</span>
+          <h1 style={s.title}>{job.title}</h1>
+        </div>
+
+        {job.requiredSkills?.length > 0 && (
+          <div style={s.section}>
+            <h2 style={s.sectionTitle}>Required skills</h2>
+            <div style={s.skills}>
+              {job.requiredSkills.map((skill, i) => (
+                <span key={i} style={s.skill}>{skill}</span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div style={s.section}>
+          <h2 style={s.sectionTitle}>About this role</h2>
+          <p style={s.description}>{job.description}</p>
         </div>
       </div>
     </div>
@@ -91,31 +109,32 @@ function JobDetailPage() {
 }
 
 const s = {
-  page: { background: '#0f0f13', minHeight: 'calc(100vh - 60px)', padding: '32px 20px' },
-  container: { maxWidth: '800px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '16px' },
-  center: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 'calc(100vh - 60px)', gap: '16px', background: '#0f0f13', color: '#e2e8f0' },
-  backBtn: { alignSelf: 'flex-start', padding: '8px 16px', background: '#1e1e2e', border: '1px solid #2d2d44', borderRadius: '8px', fontSize: '14px', cursor: 'pointer', color: '#94a3b8' },
-  card: { background: '#1e1e2e', borderRadius: '12px', padding: '32px', border: '1px solid #2d2d44', display: 'flex', flexDirection: 'column', gap: '24px' },
-  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' },
-  headerRight: { display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '10px' },
-  title: { fontSize: '24px', fontWeight: '700', color: '#e2e8f0', margin: 0 },
-  company: { fontSize: '16px', color: '#a855f7', fontWeight: '600', margin: '6px 0 2px' },
-  industry: { fontSize: '13px', color: '#7c85a2', margin: 0 },
-  statusBadge: { padding: '4px 12px', background: '#052e16', color: '#4ade80', borderRadius: '20px', fontSize: '12px', fontWeight: '600' },
-  applyBtn: { padding: '12px 28px', background: '#7c3aed', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '15px', fontWeight: '600', cursor: 'pointer' },
-  appliedBtn: { padding: '12px 28px', background: '#052e16', color: '#4ade80', border: '1px solid #14532d', borderRadius: '8px', fontSize: '15px', fontWeight: '600', cursor: 'default' },
-  metaRow: { display: 'flex', gap: '24px', flexWrap: 'wrap', background: '#16213e', borderRadius: '10px', padding: '20px' },
-  metaItem: { display: 'flex', flexDirection: 'column', gap: '4px' },
-  metaLabel: { fontSize: '12px', color: '#7c85a2', fontWeight: '500' },
-  metaValue: { fontSize: '15px', color: '#e2e8f0', fontWeight: '600' },
-  section: { display: 'flex', flexDirection: 'column', gap: '12px' },
-  sectionTitle: { fontSize: '16px', fontWeight: '700', color: '#e2e8f0', margin: 0 },
+  page: { display: 'flex', minHeight: 'calc(100vh - 56px)', maxWidth: '1080px', margin: '0 auto', padding: '40px 32px', gap: '48px' },
+  loading: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 'calc(100vh - 56px)', color: 'var(--text-secondary)' },
+  sidebar: { width: '280px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '20px' },
+  backBtn: { background: 'none', border: 'none', padding: 0, fontSize: '14px', color: 'var(--text-secondary)', cursor: 'pointer', textAlign: 'left' },
+  sideCard: { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' },
+  companyAvatar: { width: '48px', height: '48px', background: 'var(--highlight)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: '600', color: 'var(--text-primary)' },
+  companyName: { fontSize: '15px', fontWeight: '600', color: 'var(--text-primary)' },
+  companyIndustry: { fontSize: '12px', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.5px', fontFamily: 'var(--mono)' },
+  divider: { height: '1px', background: 'var(--border)' },
+  statList: { display: 'flex', flexDirection: 'column', gap: '12px' },
+  stat: { display: 'flex', flexDirection: 'column', gap: '2px' },
+  statLabel: { fontSize: '11px', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.5px', fontFamily: 'var(--mono)' },
+  statVal: { fontSize: '14px', color: 'var(--text-primary)', fontWeight: '500' },
+  applyBtn: { padding: '11px 16px', background: 'var(--accent)', color: 'var(--accent-fg)', border: 'none', borderRadius: 'var(--radius-sm)', fontSize: '14px', fontWeight: '500', cursor: 'pointer', width: '100%' },
+  appliedBtn: { padding: '11px 16px', background: 'var(--green-bg)', color: 'var(--green)', border: '1px solid #b3dfc6', borderRadius: 'var(--radius-sm)', fontSize: '14px', fontWeight: '500', cursor: 'default', width: '100%' },
+  success: { padding: '10px 12px', background: 'var(--green-bg)', color: 'var(--green)', borderRadius: 'var(--radius-sm)', fontSize: '13px', border: '1px solid #b3dfc6' },
+  errorBox: { padding: '10px 12px', background: 'var(--red-bg)', color: 'var(--red)', borderRadius: 'var(--radius-sm)', fontSize: '13px' },
+  main: { flex: 1, display: 'flex', flexDirection: 'column', gap: '40px' },
+  titleBlock: { display: 'flex', flexDirection: 'column', gap: '8px', paddingBottom: '32px', borderBottom: '1px solid var(--border)' },
+  eyebrow: { fontSize: '12px', fontWeight: '500', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '1px', fontFamily: 'var(--mono)' },
+  title: { fontSize: '40px', fontWeight: '300', color: 'var(--text-primary)', letterSpacing: '-1px', lineHeight: 1.15 },
+  section: { display: 'flex', flexDirection: 'column', gap: '16px' },
+  sectionTitle: { fontSize: '13px', fontWeight: '500', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.5px' },
   skills: { display: 'flex', gap: '8px', flexWrap: 'wrap' },
-  skill: { padding: '6px 14px', background: '#2d1f4e', color: '#a855f7', borderRadius: '6px', fontSize: '13px', fontWeight: '500' },
-  description: { fontSize: '15px', color: '#94a3b8', lineHeight: '1.7', margin: 0, whiteSpace: 'pre-wrap' },
-  applyBottom: { borderTop: '1px solid #2d2d44', paddingTop: '20px' },
-  success: { background: '#052e16', color: '#4ade80', padding: '12px 16px', borderRadius: '8px', fontSize: '14px' },
-  errorBox: { background: '#2d0a0a', color: '#f87171', padding: '12px 16px', borderRadius: '8px', fontSize: '14px' },
+  skill: { padding: '6px 12px', background: 'var(--highlight)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', fontSize: '13px', color: 'var(--text-primary)', fontFamily: 'var(--mono)' },
+  description: { fontSize: '15px', color: 'var(--text-secondary)', lineHeight: 1.8, whiteSpace: 'pre-wrap' },
 };
 
 export default JobDetailPage;

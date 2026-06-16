@@ -1,14 +1,42 @@
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=DM+Mono:wght@400;500&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #fafaf8;
+  --surface: #ffffff;
+  --border: #e8e6e0;
+  --border-strong: #d0cdc5;
+  --text-primary: #1a1916;
+  --text-secondary: #6b6860;
+  --text-tertiary: #9e9b94;
+  --accent: #1a1916;
+  --accent-fg: #fafaf8;
+  --highlight: #f0ede6;
+  --green: #1a6b3c;
+  --green-bg: #edf7f1;
+  --red: #8b1a1a;
+  --red-bg: #fdf0f0;
+  --amber: #7a4f00;
+  --amber-bg: #fdf6e3;
+  --blue: #1a3a6b;
+  --blue-bg: #edf2fd;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --font: 'DM Sans', system-ui, sans-serif;
+  --mono: 'DM Mono', monospace;
 }
 
 body {
-  font-family: 'Segoe UI', sans-serif;
-  background: #0f0f13;
-  color: #e2e8f0;
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text-primary);
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
 }
 
-button { cursor: pointer; }
-input, select, textarea { font-family: inherit; }
+button { cursor: pointer; font-family: var(--font); }
+input, select, textarea { font-family: var(--font); }
+a { text-decoration: none; }

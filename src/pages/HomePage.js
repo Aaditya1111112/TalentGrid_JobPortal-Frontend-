@@ -15,7 +15,7 @@ function HomePage() {
     setLoading(true);
     api.get('/jobs', { params })
       .then(res => setJobs(res.data.data.content))
-      .catch(err => console.error(err))
+      .catch(console.error)
       .finally(() => setLoading(false));
   }
 
@@ -27,44 +27,145 @@ function HomePage() {
     fetchJobs(params);
   }
 
-  function handleKeyDown(e) {
-    if (e.key === 'Enter') handleSearch();
-  }
-
   return (
-    <div>
+    <div style={s.page}>
       <div style={s.hero}>
-        <h1 style={s.heroTitle}>Find Your Dream Job</h1>
-        <p style={s.heroSub}>Thousands of jobs from top companies across India</p>
-        <div style={s.searchBar}>
-          <input style={s.input} placeholder="Job title or keyword" value={keyword} onChange={e => setKeyword(e.target.value)} onKeyDown={handleKeyDown} />
-          <input style={s.input} placeholder="Location" value={location} onChange={e => setLocation(e.target.value)} onKeyDown={handleKeyDown} />
-          <input style={{ ...s.input, width: '140px' }} placeholder="Experience (yrs)" type="number" value={experience} onChange={e => setExperience(e.target.value)} onKeyDown={handleKeyDown} />
-          <button style={s.searchBtn} onClick={handleSearch}>Search</button>
+        <div style={s.heroInner}>
+          <div style={s.heroLeft}>
+            <div style={s.eyebrow}>Job Portal · India</div>
+            <h1 style={s.heroTitle}>
+              Find work that<br />
+              <em style={s.italic}>actually fits.</em>
+            </h1>
+            <p style={s.heroSub}>
+              Thousands of verified listings from companies hiring right now.
+            </p>
+          </div>
+          <div style={s.heroRight}>
+            <div style={s.searchCard}>
+              <label style={s.label}>Keyword</label>
+              <input
+                style={s.input}
+                placeholder="e.g. Backend Developer"
+                value={keyword}
+                onChange={e => setKeyword(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleSearch()}
+              />
+              <label style={s.label}>Location</label>
+              <input
+                style={s.input}
+                placeholder="e.g. Delhi, Bangalore"
+                value={location}
+                onChange={e => setLocation(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleSearch()}
+              />
+              <label style={s.label}>Experience</label>
+              <input
+                style={s.input}
+                placeholder="Years of experience"
+                type="number"
+                value={experience}
+                onChange={e => setExperience(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleSearch()}
+              />
+              <button style={s.searchBtn} onClick={handleSearch}>
+                Search Jobs →
+              </button>
+            </div>
+          </div>
         </div>
       </div>
-      <div style={s.section}>
-        <h2 style={s.sectionTitle}>{loading ? 'Loading...' : `${jobs.length} Jobs Found`}</h2>
+
+      <div style={s.main}>
+        <div style={s.listHeader}>
+          <span style={s.listCount}>
+            {loading ? 'Searching...' : `${jobs.length} positions`}
+          </span>
+          <div style={s.divider} />
+        </div>
+
+        {!loading && jobs.length === 0 && (
+          <div style={s.empty}>
+            <p style={s.emptyTitle}>No results</p>
+            <p style={s.emptySub}>Try adjusting your search filters.</p>
+          </div>
+        )}
+
         <div style={s.grid}>
           {jobs.map(job => <JobCard key={job.id} job={job} />)}
         </div>
-        {!loading && jobs.length === 0 && <p style={s.empty}>No jobs found. Try different filters.</p>}
       </div>
     </div>
   );
 }
 
 const s = {
-  hero: { background: 'linear-gradient(135deg, #0f0f13, #1a0533)', padding: '60px 40px', textAlign: 'center', color: '#fff' },
-  heroTitle: { fontSize: '40px', fontWeight: '700', margin: '0 0 12px' },
-  heroSub: { fontSize: '16px', opacity: 0.75, margin: '0 0 32px' },
-  searchBar: { display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' },
-  input: { padding: '12px 16px', borderRadius: '8px', border: 'none', fontSize: '14px', width: '220px', outline: 'none', background: '#1e1e2e', color: '#e2e8f0' },
-  searchBtn: { padding: '12px 28px', background: '#9333ea', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer' },
-  section: { maxWidth: '1100px', margin: '40px auto', padding: '0 20px' },
-  sectionTitle: { fontSize: '20px', fontWeight: '600', marginBottom: '20px', color: '#e2e8f0' },
-  grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' },
-  empty: { textAlign: 'center', color: '#94a3b8', fontSize: '15px', marginTop: '40px' },
+  page: { minHeight: 'calc(100vh - 56px)' },
+  hero: {
+    borderBottom: '1px solid var(--border)',
+    background: 'var(--surface)',
+    padding: '64px 32px',
+  },
+  heroInner: {
+    maxWidth: '1080px', margin: '0 auto',
+    display: 'grid', gridTemplateColumns: '1fr 1fr',
+    gap: '64px', alignItems: 'center',
+  },
+  heroLeft: { display: 'flex', flexDirection: 'column', gap: '20px' },
+  eyebrow: {
+    fontSize: '12px', fontWeight: '500',
+    color: 'var(--text-tertiary)',
+    textTransform: 'uppercase', letterSpacing: '1px',
+    fontFamily: 'var(--mono)',
+  },
+  heroTitle: {
+    fontSize: '52px', fontWeight: '300',
+    color: 'var(--text-primary)', lineHeight: 1.1,
+    letterSpacing: '-1.5px',
+  },
+  italic: { fontStyle: 'italic', fontWeight: '300' },
+  heroSub: { fontSize: '16px', color: 'var(--text-secondary)', lineHeight: 1.6, maxWidth: '380px' },
+  heroRight: {},
+  searchCard: {
+    background: 'var(--bg)',
+    border: '1px solid var(--border)',
+    borderRadius: 'var(--radius-lg)',
+    padding: '24px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '10px',
+  },
+  label: { fontSize: '12px', fontWeight: '500', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.5px' },
+  input: {
+    padding: '10px 12px',
+    border: '1px solid var(--border)',
+    borderRadius: 'var(--radius-sm)',
+    fontSize: '14px',
+    background: 'var(--surface)',
+    color: 'var(--text-primary)',
+    outline: 'none',
+    width: '100%',
+  },
+  searchBtn: {
+    marginTop: '4px',
+    padding: '11px 16px',
+    background: 'var(--accent)',
+    color: 'var(--accent-fg)',
+    border: 'none',
+    borderRadius: 'var(--radius-sm)',
+    fontSize: '14px',
+    fontWeight: '500',
+    cursor: 'pointer',
+    letterSpacing: '-0.1px',
+  },
+  main: { maxWidth: '1080px', margin: '0 auto', padding: '40px 32px' },
+  listHeader: { display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px' },
+  listCount: { fontSize: '13px', color: 'var(--text-tertiary)', fontFamily: 'var(--mono)', whiteSpace: 'nowrap' },
+  divider: { flex: 1, height: '1px', background: 'var(--border)' },
+  grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' },
+  empty: { textAlign: 'center', padding: '80px 0' },
+  emptyTitle: { fontSize: '18px', fontWeight: '500', color: 'var(--text-primary)', marginBottom: '8px' },
+  emptySub: { fontSize: '14px', color: 'var(--text-tertiary)' },
 };
 
 export default HomePage;
