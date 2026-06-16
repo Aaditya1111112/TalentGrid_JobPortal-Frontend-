@@ -17,7 +17,6 @@ A role-based job portal frontend built with React.
 - Seeker dashboard — profile management, resume upload, application tracking
 - Employer dashboard — job posting, applicant tracking, status updates, resume download
 - Job detail page with apply functionality
-- Dark themed UI
 
 ## Project Structure
 ```
